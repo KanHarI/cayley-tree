@@ -1,5 +1,8 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="en"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Cayley Tree of F₂</title>
+<meta name="theme-color" content="#EBEFF3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C1118" media="(prefers-color-scheme: dark)">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -28,13 +31,16 @@
   --bg: #0C1118; --plate: #121923; --ink: #E5EAF1; --muted: #93A0B1; --rule: #283342;
   --gen-a: #74A7FF; --gen-b: #FF9363; --ident: #F0C04C; color-scheme: dark;
 }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body { height: 100%; }
 body {
   background: var(--bg); color: var(--ink);
   font-family: var(--font-body); font-size: 14px; line-height: 1.5;
-  padding-inline: 16px; padding-block: 16px; box-sizing: border-box;
+  padding-block: 16px; box-sizing: border-box;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 *, *::before, *::after { box-sizing: border-box; }
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .app {
   height: 100%; display: grid; gap: 16px;
   grid-template-columns: minmax(0, 1fr) 330px;
@@ -51,9 +57,11 @@ body {
 }
 .axes .ka { color: var(--gen-a); } .axes .kb { color: var(--gen-b); }
 .hint {
-  position: absolute; right: 12px; bottom: 10px; pointer-events: none;
+  position: absolute; right: 8px; bottom: 7px; pointer-events: none; padding: 1px 4px; border-radius: 3px;
   font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-align: right;
+  background: color-mix(in srgb, var(--plate) 88%, transparent);
 }
+.hint .h-touch { display: none; }
 
 .panel { min-width: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding-right: 2px; }
 h1 {
@@ -61,23 +69,31 @@ h1 {
   text-wrap: balance;
 }
 h1 i { font-weight: 600; }
-.lede { margin: 6px 0 0; color: var(--muted); max-width: 60ch; }
+.lede { margin: -12px 0 0; color: var(--muted); max-width: 60ch; }
 .lede i, .math { font-family: var(--font-math); font-style: italic; font-size: 1.08em; }
 .label {
   font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted);
   margin: 0 0 6px;
 }
-.readout { border-top: 1px solid var(--rule); padding-top: 12px; }
+/* The dock holds the readout and the move controls; on phones it sits directly under the tree. */
+.dock {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 16px;
+  grid-template-areas: "readout readout" "mlabel mlabel" "pad side";
+}
+.readout { grid-area: readout; min-width: 0; border-top: 1px solid var(--rule); padding-top: 12px; margin-bottom: 18px; }
+.move-label { grid-area: mlabel; }
 .word {
   font-family: var(--font-math); font-style: italic; font-size: 30px; line-height: 1.2;
-  overflow-wrap: anywhere; min-height: 36px;
+  overflow-wrap: anywhere; min-height: 36px; padding-right: 4px;
 }
+/* Single-line words keep their tail in view; the fade marks the clipped start. */
+.word.clipped { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
 .word sup { font-size: .55em; font-style: normal; }
 .word .e { color: var(--ident); }
 .stats { display: flex; gap: 18px; margin-top: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .stats b { color: var(--ink); font-weight: 500; }
 
-.pad { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 48px); gap: 6px; }
+.pad { grid-area: pad; display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 48px); gap: 6px; }
 .pad button {
   font-family: var(--font-math); font-style: italic; font-size: 20px;
   border-radius: 6px; cursor: pointer; border: 1px solid var(--rule); background: var(--plate); color: var(--ink);
@@ -91,19 +107,15 @@ h1 i { font-weight: 600; }
 .pad .ga { color: var(--gen-a); border-color: color-mix(in srgb, var(--gen-a) 45%, var(--rule)); background: color-mix(in srgb, var(--gen-a) 8%, var(--plate)); }
 .pad .gb { color: var(--gen-b); border-color: color-mix(in srgb, var(--gen-b) 45%, var(--rule)); background: color-mix(in srgb, var(--gen-b) 8%, var(--plate)); }
 .pad .home { color: var(--ident); font-weight: 600; border-color: color-mix(in srgb, var(--ident) 50%, var(--rule)); }
-.pad .ga:hover { background: color-mix(in srgb, var(--gen-a) 16%, var(--plate)); }
-.pad .gb:hover { background: color-mix(in srgb, var(--gen-b) 16%, var(--plate)); }
 .pad .up { grid-column: 2; grid-row: 1; } .pad .left { grid-column: 1; grid-row: 2; }
 .pad .home { grid-column: 2; grid-row: 2; } .pad .right { grid-column: 3; grid-row: 2; }
 .pad .down { grid-column: 2; grid-row: 3; }
-.moves { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-.side-btns { display: flex; flex-direction: column; gap: 6px; }
+.side-btns { grid-area: side; justify-self: start; display: flex; flex-direction: column; gap: 6px; }
 
 .btn {
   font-family: var(--font-body); font-size: 13px; font-weight: 500;
   padding: 7px 12px; border-radius: 6px; border: 1px solid var(--rule); background: var(--plate); color: var(--ink); cursor: pointer;
 }
-.btn:hover { border-color: var(--muted); }
 .btn[aria-pressed="true"] { background: var(--ink); color: var(--plate); border-color: var(--ink); }
 
 .prog { display: flex; gap: 6px; }
@@ -118,7 +130,6 @@ h1 i { font-weight: 600; }
 }
 .chip sup { font-size: .6em; font-style: normal; }
 .chip small { font-family: var(--font-body); font-style: normal; font-size: 11px; color: var(--muted); margin-left: 4px; }
-.chip:hover { border-color: var(--muted); }
 .msg { min-height: 1.2em; margin: 6px 0 0; font-size: 12px; color: var(--gen-b); }
 
 .settings { display: grid; gap: 12px; border-top: 1px solid var(--rule); padding-top: 12px; }
@@ -134,12 +145,56 @@ h1 i { font-weight: 600; }
 .note { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; margin: 0; max-width: 60ch; }
 .note kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--rule); border-radius: 3px; padding: 0 4px; }
 
-@media (max-width: 860px) {
+/* Hover styles only where hover exists, so tapped buttons don't stay highlighted on touch screens. */
+@media (hover: hover) {
+  .pad .ga:hover { background: color-mix(in srgb, var(--gen-a) 16%, var(--plate)); }
+  .pad .gb:hover { background: color-mix(in srgb, var(--gen-b) 16%, var(--plate)); }
+  .btn:hover, .chip:hover { border-color: var(--muted); }
+}
+@media (hover: none) {
+  .hint .h-mouse, .kbd-only { display: none; }
+  .hint .h-touch { display: inline; }
+}
+/* Touch: finger-sized targets, and 16px input text so iOS doesn't zoom on focus. */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; padding-inline: 14px; }
+  .chip { min-height: 40px; padding: 4px 13px; }
+  .seg button { min-height: 40px; padding-inline: 12px; }
+  .prog input { font-size: 16px; }
+}
+
+/* Phones on their side: keep the side column, with the controls ahead of the prose. */
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 561px) {
+  body { padding-block: 10px; }
+  .app { gap: 12px; grid-template-columns: minmax(0, 1fr) 320px; }
+  .panel { gap: 14px; }
+  h1 { font-size: 20px; }
+  .readout { border-top: 0; padding-top: 0; margin-bottom: 10px; }
+  .move-label { display: none; }
+  .word { font-size: 26px; }
+  .pad { grid-template-rows: repeat(3, 44px); }
+  .panel > .lede { order: 1; margin-top: 0; border-top: 1px solid var(--rule); padding-top: 12px; }
+  .panel > .run, .panel > .settings, .panel > .note { order: 2; }
+}
+
+/* Narrow portrait screens: title, tree, then the controls right under it so both fit on the first screen. */
+@media (max-width: 860px) and (orientation: portrait), (max-width: 560px) {
   html, body { height: auto; }
-  .app { grid-template-columns: minmax(0, 1fr); height: auto; }
-  .stage { height: 64vh; min-height: 340px; }
-  .panel { overflow: visible; }
-  .hint { display: none; }
+  .app { display: flex; flex-direction: column; gap: 14px; height: auto; }
+  .panel { display: contents; }
+  .panel > * { order: 4; }
+  .panel > h1 { order: 1; font-size: 22px; }
+  .stage { order: 2; height: max(240px, calc(100vh - 290px)); height: max(240px, calc(100svh - 290px)); }
+  .panel > .dock {
+    order: 3; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "readout pad" "side pad";
+    column-gap: 14px; row-gap: 10px; align-items: start;
+  }
+  .readout { border-top: 0; padding-top: 0; margin: 0; }
+  .move-label { display: none; }
+  .side-btns { align-self: end; }
+  .word { font-size: 24px; white-space: nowrap; overflow: hidden; overflow-wrap: normal; min-height: 0; }
+  .stats { flex-wrap: wrap; column-gap: 12px; row-gap: 0; }
+  .lede { margin: 0; border-top: 1px solid var(--rule); padding-top: 12px; }
 }
 </style>
 
@@ -147,39 +202,34 @@ h1 i { font-weight: 600; }
   <div class="stage" id="stage">
     <canvas id="cv" tabindex="0" aria-label="Cayley tree of the free group on a and b. Use arrow keys to move between junctions."></canvas>
     <div class="axes"><span class="ka">a →</span><span class="kb">b ↑</span></div>
-    <div class="hint">click any junction to travel there</div>
+    <div class="hint"><span class="h-mouse">click any junction to travel there</span><span class="h-touch">tap a junction to go there</span></div>
   </div>
 
-  <aside class="panel">
-    <header>
-      <h1>The free group <i>F</i><sub>2</sub> = ⟨<i>a</i>, <i>b</i>⟩</h1>
-      <p class="lede">Every junction is a reduced word. A step moves the viewpoint to a neighbour: its branches grow to full size while the old centre shrinks away in the opposite direction. The tree looks the same from every junction, so each step is a symmetry of the whole graph.</p>
-    </header>
+  <div class="panel">
+    <h1>The free group <i>F</i><sub>2</sub> = ⟨<i>a</i>, <i>b</i>⟩</h1>
+    <p class="lede">Every junction is a reduced word. A step moves the viewpoint to a neighbour: its branches grow to full size while the old centre shrinks away in the opposite direction. The tree looks the same from every junction, so each step is a symmetry of the whole graph.</p>
 
-    <section class="readout" aria-live="polite">
-      <p class="label">At the centre</p>
-      <div class="word" id="word"></div>
-      <div class="stats"><span>|<i>w</i>| = <b id="len">0</b></span><span>steps <b id="steps">0</b></span><span>queued <b id="queued">0</b></span></div>
-    </section>
-
-    <section>
-      <p class="label">Move by a generator</p>
-      <div class="moves">
-        <div class="pad">
-          <button class="gb up" data-g="1" title="Multiply by b (↑)"><i>b</i></button>
-          <button class="ga left" data-g="2" title="Multiply by a⁻¹ (←)"><i>a</i><sup>−1</sup></button>
-          <button class="home" id="home" title="Walk back to the identity (E)">e</button>
-          <button class="ga right" data-g="0" title="Multiply by a (→)"><i>a</i></button>
-          <button class="gb down" data-g="3" title="Multiply by b⁻¹ (↓)"><i>b</i><sup>−1</sup></button>
-        </div>
-        <div class="side-btns">
-          <button class="btn" id="undo">Undo step</button>
-          <button class="btn" id="walk" aria-pressed="false">Random walk</button>
-        </div>
+    <div class="dock">
+      <section class="readout" aria-live="polite">
+        <p class="label">At the centre</p>
+        <div class="word" id="word"></div>
+        <div class="stats"><span>|<i>w</i>| = <b id="len">0</b></span><span>steps <b id="steps">0</b></span><span>queued <b id="queued">0</b></span></div>
+      </section>
+      <p class="label move-label">Move by a generator</p>
+      <div class="pad" role="group" aria-label="Move by a generator">
+        <button class="gb up" data-g="1" title="Multiply by b (↑)"><i>b</i></button>
+        <button class="ga left" data-g="2" title="Multiply by a⁻¹ (←)"><i>a</i><sup>−1</sup></button>
+        <button class="home" id="home" title="Walk back to the identity (E)">e</button>
+        <button class="ga right" data-g="0" title="Multiply by a (→)"><i>a</i></button>
+        <button class="gb down" data-g="3" title="Multiply by b⁻¹ (↓)"><i>b</i><sup>−1</sup></button>
       </div>
-    </section>
+      <div class="side-btns">
+        <button class="btn" id="undo">Undo step</button>
+        <button class="btn" id="walk" aria-pressed="false">Random walk</button>
+      </div>
+    </div>
 
-    <section>
+    <section class="run">
       <p class="label">Run a word</p>
       <form class="prog" id="progForm">
         <input id="prog" type="text" autocomplete="off" spellcheck="false" placeholder="a b A B   or   a^3 b^-2" aria-label="Word to run">
@@ -214,8 +264,8 @@ h1 i { font-weight: 600; }
       </div>
     </section>
 
-    <p class="note">Keys: <kbd>←</kbd><kbd>→</kbd> for <span class="math">a</span><sup>∓1</sup>, <kbd>↑</kbd><kbd>↓</kbd> for <span class="math">b</span><sup>±1</sup>, <kbd>E</kbd> home, <kbd>Space</kbd> random walk, <kbd>Backspace</kbd> undo. Switch labels to “From centre” to see that the view after every step is identical: left multiplication by <span class="math">g</span><sup>−1</sup> carries the neighbour <span class="math">g</span> to the centre and preserves every labelled edge. Run <span class="math">aba</span><sup>−1</sup><span class="math">b</span><sup>−1</sup> to see that the commutator does not close up: <span class="math">F</span><sub>2</sub> has no relations, so its Cayley graph is a tree.</p>
-  </aside>
+    <p class="note"><span class="kbd-only">Keys: <kbd>←</kbd><kbd>→</kbd> for <span class="math">a</span><sup>∓1</sup>, <kbd>↑</kbd><kbd>↓</kbd> for <span class="math">b</span><sup>±1</sup>, <kbd>E</kbd> home, <kbd>Space</kbd> random walk, <kbd>Backspace</kbd> undo. </span>Switch labels to “From centre” to see that the view after every step is identical: left multiplication by <span class="math">g</span><sup>−1</sup> carries the neighbour <span class="math">g</span> to the centre and preserves every labelled edge. Run <span class="math">aba</span><sup>−1</sup><span class="math">b</span><sup>−1</sup> to see that the commutator does not close up: <span class="math">F</span><sub>2</sub> has no relations, so its Cayley graph is a tree.</p>
+  </div>
 </div>
 
 <script>
@@ -235,9 +285,19 @@ h1 i { font-weight: 600; }
     }
     return out.map(r => ({ letter: r.i & 1 ? 'b' : 'a', exp: r.i >= 2 ? -r.n : r.n }));
   }
+  const runText = r => r.letter + (r.exp === 1 ? '' : String(r.exp).split('').map(c => SUP[c]).join(''));
   function wordText(w) {
     if (!w.length) return 'e';
-    return runs(w).map(r => r.letter + (r.exp === 1 ? '' : String(r.exp).split('').map(c => SUP[c]).join(''))).join('');
+    return runs(w).map(runText).join('');
+  }
+  // Canvas label for w that fits maxW in the current font, dropping leading runs behind an ellipsis.
+  function fitLabel(w, maxW) {
+    const full = wordText(w);
+    if (ctx.measureText(full).width <= maxW) return full;
+    let rs = runs(w).slice(-40);
+    let s = '…' + rs.map(runText).join('');
+    while (rs.length > 1 && ctx.measureText(s).width > maxW) { rs = rs.slice(1); s = '…' + rs.map(runText).join(''); }
+    return s;
   }
   function wordHTML(w, maxRuns = 60) {
     if (!w.length) return '<span class="e">e</span>';
@@ -267,6 +327,7 @@ h1 i { font-weight: 600; }
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     W = r.width; H = r.height;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    fitWord();
     requestRender();
   }).observe(stage);
 
@@ -376,7 +437,7 @@ h1 i { font-weight: 600; }
     function addNode(x, y, sz, onPath) {
       if (sz < 1.6) return;
       const node = { x, y, sz, isE: absW.length === 0, onPath };
-      if (sz > 58 && S.labels !== 'off') node.label = S.labels === 'abs' ? wordText(absW) : wordText(rel);
+      if (sz > Math.min(58, L * 0.4) && S.labels !== 'off') node.word = (S.labels === 'abs' ? absW : rel).slice();
       nodes.push(node);
       if (sz > 7) hits.push({ x, y, abs: absW.slice(), key: absW.join('') });
     }
@@ -465,12 +526,13 @@ h1 i { font-weight: 600; }
     // labels
     ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round';
     for (const n of nodes) {
-      if (!n.label) continue;
+      if (!n.word) continue;
       const fs = Math.max(11, Math.min(21, n.sz * 0.1));
       ctx.font = `italic ${fs}px ${col.math}`;
       const x = n.x + 7, y = n.y - 7;
-      ctx.strokeStyle = col.plate; ctx.lineWidth = 4; ctx.strokeText(n.label, x, y);
-      ctx.fillStyle = n.isE && S.labels === 'abs' ? col.id : col.ink; ctx.fillText(n.label, x, y);
+      const label = fitLabel(n.word, n.sz - 12);   // stop short of the next junction to the right
+      ctx.strokeStyle = col.plate; ctx.lineWidth = 4; ctx.strokeText(label, x, y);
+      ctx.fillStyle = n.isE && S.labels === 'abs' ? col.id : col.ink; ctx.fillText(label, x, y);
     }
     // hover ring
     hover = null;
@@ -493,10 +555,13 @@ h1 i { font-weight: 600; }
   }
 
   // ---------- pointer ----------
+  let pointerKind = 'mouse';
+  cv.addEventListener('pointerdown', ev => { pointerKind = ev.pointerType; });
   function nearest(ev) {
     const r = cv.getBoundingClientRect();
     const x = ev.clientX - r.left, y = ev.clientY - r.top;
-    let best = null, bd = 18 * 18;
+    const reach = pointerKind === 'mouse' ? 18 : 30;   // fingers are less precise than a cursor
+    let best = null, bd = reach * reach;
     for (const h of hits) { const d = (h.x - x) ** 2 + (h.y - y) ** 2; if (d < bd) { bd = d; best = h; } }
     return best;
   }
@@ -512,8 +577,15 @@ h1 i { font-weight: 600; }
 
   // ---------- panel ----------
   const $ = id => document.getElementById(id);
+  // When the word is kept to one line (phones), scroll it so the newest letters stay visible.
+  function fitWord() {
+    const el = $('word');
+    el.classList.toggle('clipped', el.scrollWidth > el.clientWidth + 1);
+    el.scrollLeft = el.scrollWidth;
+  }
   function updatePanel() {
     $('word').innerHTML = wordHTML(cur);
+    fitWord();
     $('len').textContent = cur.length;
     $('steps').textContent = steps;
     $('queued').textContent = queue.length + (anim ? 1 : 0);
@@ -587,6 +659,9 @@ h1 i { font-weight: 600; }
     else if (e.key === 'Backspace') { e.preventDefault(); if (history.length) enqueue(inv(history.pop()), false); }
     else if (e.key === ' ' && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); setWalk(!S.walk); }
   });
+
+  // iOS only applies :active styles when a touchstart listener exists
+  document.addEventListener('touchstart', () => {}, { passive: true });
 
   // repaint on theme change
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', requestRender);
