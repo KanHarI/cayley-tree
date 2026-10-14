@@ -313,7 +313,6 @@ h1 i { font-weight: 600; }
   let anim = null;       // { g, start, dur }
   let history = [];
   let steps = 0;
-  let lastMove = -1;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const S = { dur: reduceMotion ? 200 : 700, ratio: 0.48, labels: 'abs', path: true, arrows: true, walk: false };
 
@@ -359,7 +358,7 @@ h1 i { font-weight: 600; }
     if (anim) {
       const p = Math.min(1, Math.max(0, (now - anim.start) / anim.dur));
       if (p >= 1) {
-        cur = mul(cur, anim.g); lastMove = anim.g; steps++;
+        cur = mul(cur, anim.g); steps++;
         anim = null;
         if (!queue.length && S.walk) enqueueRandom();
         if (queue.length) startNext(now, S.walk && queue.length === 1 ? 140 : 0);
@@ -383,9 +382,9 @@ h1 i { font-weight: 600; }
     if (record) { history.push(i); if (history.length > 2000) history.shift(); }
     kick();
   }
+  // Simple random walk: all four neighbours equally likely, so a quarter of steps backtrack.
   function enqueueRandom() {
-    const opts = [0, 1, 2, 3].filter(i => lastMove < 0 || i !== inv(lastMove));
-    const i = opts[Math.floor(Math.random() * opts.length)];
+    const i = Math.floor(Math.random() * 4);
     queue.push(i); fin = mul(fin, i); history.push(i);
     if (history.length > 2000) history.shift();
   }
