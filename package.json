@@ -1,0 +1,20 @@
+{
+  "name": "cayley-tree",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Interactive Cayley tree of the free group F₂, rendered with WebGL",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "6.4.3",
+    "vitest": "3.2.7"
+  }
+}

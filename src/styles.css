@@ -1,0 +1,190 @@
+/* Layout: one large drawing plate for the tree, a narrow instrument column beside it (stacks below on phones). */
+:root {
+  --bg: #EBEFF3;
+  --plate: #F7F9FB;
+  --ink: #17202B;
+  --muted: #5A6575;
+  --rule: #CDD4DD;
+  --gen-a: #1F5FC4;
+  --gen-b: #BF4410;
+  --ident: #B57A12;
+  --font-math: "STIX Two Text", "STIX Two Math", "Cambria Math", Georgia, serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1118; --plate: #121923; --ink: #E5EAF1; --muted: #93A0B1; --rule: #283342;
+    --gen-a: #74A7FF; --gen-b: #FF9363; --ident: #F0C04C; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1118; --plate: #121923; --ink: #E5EAF1; --muted: #93A0B1; --rule: #283342;
+  --gen-a: #74A7FF; --gen-b: #FF9363; --ident: #F0C04C; color-scheme: dark;
+}
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.5;
+  padding-block: 16px; box-sizing: border-box;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.app {
+  height: 100%; display: grid; gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 330px;
+}
+.stage {
+  position: relative; min-width: 0; min-height: 0;
+  background: var(--plate); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden;
+}
+/* The WebGL canvas draws the tree; the 2D canvas above it draws text and takes the pointer. */
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
+.stage #gl { pointer-events: none; }
+.stage #cv:focus-visible { outline: 2px solid var(--gen-a); outline-offset: -3px; }
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px; text-align: center; color: var(--muted); }
+.axes {
+  position: absolute; left: 12px; bottom: 10px; pointer-events: none;
+  font-family: var(--font-mono); font-size: 11px; color: var(--muted); display: flex; gap: 14px;
+}
+.axes .ka { color: var(--gen-a); } .axes .kb { color: var(--gen-b); }
+.hint {
+  position: absolute; right: 8px; bottom: 7px; pointer-events: none; padding: 1px 4px; border-radius: 3px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-align: right;
+  background: color-mix(in srgb, var(--plate) 88%, transparent);
+}
+.hint .h-touch { display: none; }
+
+.panel { min-width: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding-right: 2px; }
+h1 {
+  font-family: var(--font-math); font-weight: 600; font-size: 26px; line-height: 1.15; margin: 0;
+  text-wrap: balance;
+}
+h1 i { font-weight: 600; }
+.lede { margin: -12px 0 0; color: var(--muted); max-width: 60ch; }
+.lede i, .math { font-family: var(--font-math); font-style: italic; font-size: 1.08em; }
+.label {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted);
+  margin: 0 0 6px;
+}
+/* The dock holds the readout and the move controls; on phones it sits directly under the tree. */
+.dock {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 16px;
+  grid-template-areas: "readout readout" "mlabel mlabel" "pad side";
+}
+.readout { grid-area: readout; min-width: 0; border-top: 1px solid var(--rule); padding-top: 12px; margin-bottom: 18px; }
+.move-label { grid-area: mlabel; }
+.word {
+  font-family: var(--font-math); font-style: italic; font-size: 30px; line-height: 1.2;
+  overflow-wrap: anywhere; min-height: 36px; padding-right: 4px;
+}
+/* Single-line words keep their tail in view; the fade marks the clipped start. */
+.word.clipped { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px); mask-image: linear-gradient(to right, transparent, #000 28px); }
+.word sup { font-size: .55em; font-style: normal; }
+.word .e { color: var(--ident); }
+.stats { display: flex; gap: 18px; margin-top: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--ink); font-weight: 500; }
+
+.pad { grid-area: pad; display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 48px); gap: 6px; }
+.pad button {
+  font-family: var(--font-math); font-style: italic; font-size: 20px;
+  border-radius: 6px; cursor: pointer; border: 1px solid var(--rule); background: var(--plate); color: var(--ink);
+  transition: transform .08s ease, background .15s ease;
+}
+.pad button sup { font-size: .55em; font-style: normal; }
+.pad button:active { transform: scale(.95); }
+.pad button:focus-visible, .btn:focus-visible, .seg button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--gen-a); outline-offset: 2px;
+}
+.pad .ga { color: var(--gen-a); border-color: color-mix(in srgb, var(--gen-a) 45%, var(--rule)); background: color-mix(in srgb, var(--gen-a) 8%, var(--plate)); }
+.pad .gb { color: var(--gen-b); border-color: color-mix(in srgb, var(--gen-b) 45%, var(--rule)); background: color-mix(in srgb, var(--gen-b) 8%, var(--plate)); }
+.pad .home { color: var(--ident); font-weight: 600; border-color: color-mix(in srgb, var(--ident) 50%, var(--rule)); }
+.pad .up { grid-column: 2; grid-row: 1; } .pad .left { grid-column: 1; grid-row: 2; }
+.pad .home { grid-column: 2; grid-row: 2; } .pad .right { grid-column: 3; grid-row: 2; }
+.pad .down { grid-column: 2; grid-row: 3; }
+.side-btns { grid-area: side; justify-self: start; display: flex; flex-direction: column; gap: 6px; }
+
+.btn {
+  font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  padding: 7px 12px; border-radius: 6px; border: 1px solid var(--rule); background: var(--plate); color: var(--ink); cursor: pointer;
+}
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--plate); border-color: var(--ink); }
+
+.prog { display: flex; gap: 6px; }
+.prog input {
+  flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 13px;
+  padding: 7px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--plate); color: var(--ink);
+}
+.msg { min-height: 1.2em; margin: 6px 0 0; font-size: 12px; color: var(--gen-b); }
+
+.settings { display: grid; gap: 12px; border-top: 1px solid var(--rule); padding-top: 12px; }
+.row { display: grid; grid-template-columns: 110px minmax(0,1fr) 44px; align-items: center; gap: 8px; }
+.row label { font-size: 13px; }
+.row output { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.row input[type=range] { width: 100%; accent-color: var(--gen-a); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button { font-family: var(--font-body); font-size: 12px; padding: 5px 9px; border: 0; background: var(--plate); color: var(--muted); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--plate); }
+.toggles { display: flex; gap: 8px; flex-wrap: wrap; }
+.note { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; margin: 0; max-width: 60ch; }
+.note kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--rule); border-radius: 3px; padding: 0 4px; }
+
+/* Hover styles only where hover exists, so tapped buttons don't stay highlighted on touch screens. */
+@media (hover: hover) {
+  .pad .ga:hover { background: color-mix(in srgb, var(--gen-a) 16%, var(--plate)); }
+  .pad .gb:hover { background: color-mix(in srgb, var(--gen-b) 16%, var(--plate)); }
+  .btn:hover { border-color: var(--muted); }
+}
+@media (hover: none) {
+  .hint .h-mouse, .kbd-only { display: none; }
+  .hint .h-touch { display: inline; }
+}
+/* Touch: finger-sized targets, and 16px input text so iOS doesn't zoom on focus. */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; padding-inline: 14px; }
+  .seg button { min-height: 40px; padding-inline: 12px; }
+  .prog input { font-size: 16px; }
+}
+
+/* Phones on their side: keep the side column, with the controls ahead of the prose. */
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 561px) {
+  body { padding-block: 10px; }
+  .app { gap: 12px; grid-template-columns: minmax(0, 1fr) 320px; }
+  .panel { gap: 14px; }
+  h1 { font-size: 20px; }
+  .readout { border-top: 0; padding-top: 0; margin-bottom: 10px; }
+  .move-label { display: none; }
+  .word { font-size: 26px; }
+  .pad { grid-template-rows: repeat(3, 44px); }
+  .panel > .lede { order: 1; margin-top: 0; border-top: 1px solid var(--rule); padding-top: 12px; }
+  .panel > .run, .panel > .settings, .panel > .note { order: 2; }
+}
+
+/* Narrow portrait screens: title, tree, then the controls right under it so both fit on the first screen. */
+@media (max-width: 860px) and (orientation: portrait), (max-width: 560px) {
+  html, body { height: auto; }
+  .app { display: flex; flex-direction: column; gap: 14px; height: auto; }
+  .panel { display: contents; }
+  .panel > * { order: 4; }
+  .panel > h1 { order: 1; font-size: 22px; }
+  .stage { order: 2; height: max(240px, calc(100vh - 290px)); height: max(240px, calc(100svh - 290px)); }
+  .panel > .dock {
+    order: 3; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "readout pad" "side pad";
+    column-gap: 14px; row-gap: 10px; align-items: start;
+  }
+  .readout { border-top: 0; padding-top: 0; margin: 0; }
+  .move-label { display: none; }
+  .side-btns { align-self: end; }
+  .word { font-size: 24px; white-space: nowrap; overflow: hidden; overflow-wrap: normal; min-height: 0; }
+  .stats { flex-wrap: wrap; column-gap: 12px; row-gap: 0; }
+  .lede { margin: 0; border-top: 1px solid var(--rule); padding-top: 12px; }
+}
