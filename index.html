@@ -101,7 +101,7 @@ h1 i { font-weight: 600; }
 }
 .pad button sup { font-size: .55em; font-style: normal; }
 .pad button:active { transform: scale(.95); }
-.pad button:focus-visible, .btn:focus-visible, .chip:focus-visible, .seg button:focus-visible, input:focus-visible {
+.pad button:focus-visible, .btn:focus-visible, .seg button:focus-visible, input:focus-visible {
   outline: 2px solid var(--gen-a); outline-offset: 2px;
 }
 .pad .ga { color: var(--gen-a); border-color: color-mix(in srgb, var(--gen-a) 45%, var(--rule)); background: color-mix(in srgb, var(--gen-a) 8%, var(--plate)); }
@@ -123,13 +123,6 @@ h1 i { font-weight: 600; }
   flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 13px;
   padding: 7px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--plate); color: var(--ink);
 }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.chip {
-  font-family: var(--font-math); font-style: italic; font-size: 15px;
-  padding: 3px 10px; border-radius: 999px; border: 1px solid var(--rule); background: transparent; color: var(--ink); cursor: pointer;
-}
-.chip sup { font-size: .6em; font-style: normal; }
-.chip small { font-family: var(--font-body); font-style: normal; font-size: 11px; color: var(--muted); margin-left: 4px; }
 .msg { min-height: 1.2em; margin: 6px 0 0; font-size: 12px; color: var(--gen-b); }
 
 .settings { display: grid; gap: 12px; border-top: 1px solid var(--rule); padding-top: 12px; }
@@ -149,7 +142,7 @@ h1 i { font-weight: 600; }
 @media (hover: hover) {
   .pad .ga:hover { background: color-mix(in srgb, var(--gen-a) 16%, var(--plate)); }
   .pad .gb:hover { background: color-mix(in srgb, var(--gen-b) 16%, var(--plate)); }
-  .btn:hover, .chip:hover { border-color: var(--muted); }
+  .btn:hover { border-color: var(--muted); }
 }
 @media (hover: none) {
   .hint .h-mouse, .kbd-only { display: none; }
@@ -158,7 +151,6 @@ h1 i { font-weight: 600; }
 /* Touch: finger-sized targets, and 16px input text so iOS doesn't zoom on focus. */
 @media (pointer: coarse) {
   .btn { min-height: 44px; padding-inline: 14px; }
-  .chip { min-height: 40px; padding: 4px 13px; }
   .seg button { min-height: 40px; padding-inline: 12px; }
   .prog input { font-size: 16px; }
 }
@@ -235,7 +227,6 @@ h1 i { font-weight: 600; }
         <input id="prog" type="text" autocomplete="off" spellcheck="false" placeholder="a b A B   or   a^3 b^-2" aria-label="Word to run">
         <button class="btn" type="submit">Run</button>
       </form>
-      <div class="chips" id="chips"></div>
       <p class="msg" id="msg" role="status"></p>
     </section>
 
@@ -244,11 +235,6 @@ h1 i { font-weight: 600; }
         <label for="speed">Step time</label>
         <input id="speed" type="range" min="150" max="1600" step="50" value="700">
         <output id="speedOut" for="speed">0.70s</output>
-      </div>
-      <div class="row">
-        <label for="ratio">Branch ratio</label>
-        <input id="ratio" type="range" min="0.30" max="0.50" step="0.01" value="0.48">
-        <output id="ratioOut" for="ratio">0.48</output>
       </div>
       <div>
         <p class="label">Labels</p>
@@ -314,7 +300,8 @@ h1 i { font-weight: 600; }
   let history = [];
   let steps = 0;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const S = { dur: reduceMotion ? 200 : 700, ratio: 0.48, labels: 'abs', path: true, arrows: true, walk: false };
+  const RATIO = 0.48;    // each generation of branches is this fraction of the previous one
+  const S = { dur: reduceMotion ? 200 : 700, labels: 'abs', path: true, arrows: true, walk: false };
 
   // ---------- canvas ----------
   const stage = document.getElementById('stage');
@@ -338,6 +325,11 @@ h1 i { font-weight: 600; }
   function requestRender() { if (!rafId) rafId = requestAnimationFrame(frame); }
 
   const ease = p => p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  // During a step the old centre's half shrinks over the first STAGGER of the step and the new
+  // centre's half grows over the last STAGGER. Shrinking and growing at the same time makes their
+  // side branches pass through each other; 0.62 is the most overlap that keeps them apart at RATIO 0.48.
+  const STAGGER = 0.62;
 
   function stepDuration() {
     const pending = queue.length;
@@ -364,7 +356,7 @@ h1 i { font-weight: 600; }
         if (queue.length) startNext(now, S.walk && queue.length === 1 ? 140 : 0);
         updatePanel();
         if (anim) { t = 0; g = anim.g; }
-      } else { t = ease(p); g = anim.g; }
+      } else { t = p; g = anim.g; }
     }
     render(g, t);
     if (anim) requestRender();
@@ -410,7 +402,7 @@ h1 i { font-weight: 600; }
     ctx.fillStyle = col.plate; ctx.fillRect(0, 0, W, H);
     if (W < 10 || H < 10) return;
 
-    const r = S.ratio;
+    const r = RATIO;
     const L = 0.47 * Math.min(W, H) * (1 - r);
     const Ox = W / 2, Oy = H / 2;
 
@@ -460,19 +452,21 @@ h1 i { font-weight: 600; }
       addNode(Ox, Oy, L, S.path);
       for (let i = 0; i < 4; i++) branch(Ox, Oy, i, 0, S.path);
     } else {
-      const cx = Ox - t * L * DIRS[g][0], cy = Oy - t * L * DIRS[g][1];
-      const gx = Ox + (1 - t) * L * DIRS[g][0], gy = Oy + (1 - t) * L * DIRS[g][1];
+      const move = ease(t);
+      const shrink = ease(clamp01(t / STAGGER)), grow = ease(clamp01((t - (1 - STAGGER)) / STAGGER));
+      const cx = Ox - move * L * DIRS[g][0], cy = Oy - move * L * DIRS[g][1];
+      const gx = Ox + (1 - move) * L * DIRS[g][0], gy = Oy + (1 - move) * L * DIRS[g][1];
       // old centre side
       absW.push(...cur);
-      addNode(cx, cy, L * Math.pow(r, t), S.path);
-      for (let i = 0; i < 4; i++) if (i !== g) branch(cx, cy, i, t, S.path);
+      addNode(cx, cy, L * Math.pow(r, shrink), S.path);
+      for (let i = 0; i < 4; i++) if (i !== g) branch(cx, cy, i, shrink, S.path);
       // the edge being travelled
       addSeg(cx, cy, gx, gy, g & 1, L, S.path);
       // new centre side
       absW.length = 0; absW.push(...mul(cur, g));
       rel.push(g);
-      addNode(gx, gy, L * Math.pow(r, 1 - t), S.path);
-      for (let i = 0; i < 4; i++) if (i !== inv(g)) branch(gx, gy, i, 1 - t, S.path);
+      addNode(gx, gy, L * Math.pow(r, 1 - grow), S.path);
+      for (let i = 0; i < 4; i++) if (i !== inv(g)) branch(gx, gy, i, 1 - grow, S.path);
       rel.pop();
     }
 
@@ -600,7 +594,6 @@ h1 i { font-weight: 600; }
   $('walk').addEventListener('click', () => setWalk(!S.walk));
 
   $('speed').addEventListener('input', e => { S.dur = +e.target.value; $('speedOut').textContent = (S.dur / 1000).toFixed(2) + 's'; });
-  $('ratio').addEventListener('input', e => { S.ratio = +e.target.value; $('ratioOut').textContent = S.ratio.toFixed(2); requestRender(); });
   document.querySelectorAll('#labels button').forEach(b => b.addEventListener('click', () => {
     S.labels = b.dataset.v;
     document.querySelectorAll('#labels button').forEach(x => x.setAttribute('aria-pressed', x === b));
@@ -634,19 +627,6 @@ h1 i { font-weight: 600; }
     if (r.moves) r.moves.forEach(m => enqueue(m));
   }
   $('progForm').addEventListener('submit', e => { e.preventDefault(); run($('prog').value); });
-
-  const CHIPS = [
-    ['a b A B', '<i>aba</i><sup>−1</sup><i>b</i><sup>−1</sup><small>commutator</small>'],
-    ['a b A', '<i>aba</i><sup>−1</sup><small>conjugate</small>'],
-    ['a^3 b^3 a^-3 b^-3', '<i>a</i><sup>3</sup><i>b</i><sup>3</sup><i>a</i><sup>−3</sup><i>b</i><sup>−3</sup>'],
-    ['a b a b A B A B', '<i>abab</i>(<i>ba</i>)<sup>−2</sup>']
-  ];
-  CHIPS.forEach(([prog, html]) => {
-    const b = document.createElement('button');
-    b.className = 'chip'; b.type = 'button'; b.innerHTML = html; b.title = 'Run ' + prog;
-    b.addEventListener('click', () => { $('prog').value = prog; run(prog); });
-    $('chips').appendChild(b);
-  });
 
   // keyboard
   document.addEventListener('keydown', e => {
