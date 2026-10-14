@@ -5,11 +5,11 @@ import { clearance } from './clearance';
 const samples = (n: number) => Array.from({ length: n + 1 }, (_, k) => k / n);
 
 describe('ease', () => {
-  it('is the sine curve (1 − cos πp) / 2', () => {
+  it('is the quintic smootherstep curve', () => {
     expect(ease(0)).toBe(0);
     expect(ease(1)).toBeCloseTo(1, 12);
     expect(ease(0.5)).toBeCloseTo(0.5, 12);
-    expect(ease(0.25)).toBeCloseTo((1 - Math.SQRT1_2) / 2, 12);
+    expect(ease(0.25)).toBeCloseTo(0.103515625, 12);
   });
 });
 
@@ -57,6 +57,19 @@ describe('stepPose', () => {
     for (const key of ['so', 'sn', 'co', 'go'] as const) {
       expect(Math.abs((justAfter[key] - start[key]) / h)).toBeLessThan(1e-4);
       expect(Math.abs((end[key] - justBefore[key]) / h)).toBeLessThan(1e-4);
+    }
+  });
+
+  it('starts and finishes both halves with zero acceleration', () => {
+    const h = 1e-4;
+    for (const endpoint of [0, 1]) {
+      const dt = endpoint === 0 ? h : -h;
+      const p0 = stepPose(endpoint), p1 = stepPose(endpoint + dt), p2 = stepPose(endpoint + 2 * dt);
+      for (const key of ['so', 'sn', 'co', 'go'] as const) {
+        // One-sided finite difference near the endpoint; cosine retains nonzero acceleration here.
+        const acceleration = (p2[key] - 2 * p1[key] + p0[key]) / (h * h);
+        expect(Math.abs(acceleration)).toBeLessThan(0.02);
+      }
     }
   });
 

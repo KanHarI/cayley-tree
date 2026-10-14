@@ -30,8 +30,9 @@ the old centre's half of the tree is scaled about g⁻∞ and the new centre's h
 (`stepPose` in `src/motion.ts`): every point moves in a straight line, one way only, and each half's
 position follows from its size.
 
-Both halves move throughout the whole step, starting and finishing together with zero velocity.
-One sine ease-in-out clock, `u = (1 − cos πt)/2`, interpolates their reciprocal sizes:
+Both halves move throughout the whole step, starting and finishing together with zero velocity
+and acceleration. One quintic smootherstep clock, `u = 6t⁵ − 15t⁴ + 10t³`, interpolates their
+reciprocal sizes:
 
 ```text
 oldScale = r / (r + (1 − r)u)    // 1 → r
@@ -43,7 +44,7 @@ side branch fits inside a diamond of radius `scale·r/(1 − r)`. The scales sat
 `min(r·oldScale + newScale, oldScale + r·newScale) ≤ 2r < 1`, keeping the opposing diamonds apart;
 the connecting edge remains at least one unit long. At the midpoint both scales are `2r/(1 + r)`
 and the connecting edge stretches to about 1.351 units. `tests/motion.test.ts` checks fixed tips,
-motion throughout the step, endpoint velocities, and clearance between the two halves.
+motion throughout the step, endpoint velocities and accelerations, and clearance between the two halves.
 
 ### Rendering
 

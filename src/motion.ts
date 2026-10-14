@@ -12,8 +12,8 @@
 export const RATIO = 0.48;
 export const REACH = 1 / (1 - RATIO);
 
-/** Sine ease-in-out: (1 − cos πp) / 2. */
-export const ease = (p: number): number => (1 - Math.cos(Math.PI * p)) / 2;
+/** Quintic smootherstep: zero velocity and acceleration at both endpoints. */
+export const ease = (p: number): number => 6 * p ** 5 - 15 * p ** 4 + 10 * p ** 3;
 export const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
 export interface StepPose {
@@ -29,8 +29,9 @@ export interface StepPose {
 
 /**
  * Pose of the two halves at time t ∈ [0, 1] of a step.
- * Interpolate reciprocal sizes on one sine clock, so both halves move for the whole step and
- * start and finish at rest. For r < 1/2, min(r·so + sn, so + r·sn) ≤ 2r < 1 keeps the opposing
+ * Interpolate reciprocal sizes on one quintic clock, so both halves move for the whole step and
+ * start and finish with zero velocity and acceleration. For r < 1/2,
+ * min(r·so + sn, so + r·sn) ≤ 2r < 1 keeps the opposing
  * side branches' bounding diamonds apart (see tests/motion.test.ts).
  */
 export function stepPose(t: number): StepPose {
